@@ -1,43 +1,43 @@
 <?php
 session_start();
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "air_quality_db";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+include 'config.php'; // Database connection
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST["username"];
-    $password = $_POST["password"];
+    $username = $_POST['username'];
+    $password = md5($_POST['password']); // Encrypt password (use bcrypt for production)
 
-    $sql = "SELECT id, password, role FROM users WHERE username = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $stmt->store_result();
-    $stmt->bind_result($id, $hashed_password, $role);
+    $query = "SELECT * FROM users WHERE username='$username' AND password='$password'";
+    $result = $conn->query($query);
 
-    if ($stmt->fetch() && password_verify($password, $hashed_password)) {
-        $_SESSION["user_id"] = $id;
-        $_SESSION["role"] = $role;
-        header("Location: dashboard.php");
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+        $_SESSION["username"] = $user["username"];
+        $_SESSION["role"] = $user["role"]; // Store user role in session
+
+        header("Location: dashboard.php"); // Redirect to dashboard
     } else {
-        echo "Invalid credentials.";
+        echo "Invalid login details.";
     }
-
-    $stmt->close();
 }
-
-$conn->close();
 ?>
 
-<form method="POST" action="">
-    <input type="text" name="username" placeholder="Username" required>
-    <input type="password" name="password" placeholder="Password" required>
-    <button type="submit">Login</button>
-</form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <h2>Login</h2>
+    <form method="POST" action="">
+        <label>Username:</label>
+        <input type="text" name="username" required><br>
+
+        <label>Password:</label>
+        <input type="password" name="password" required><br>
+
+        <input type="submit" value="Login">
+    </form>
+</body>
+</html>
