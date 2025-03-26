@@ -1,24 +1,16 @@
 <?php
 session_start();
+include 'config.php'; 
+
+// Check if user is Monitoring Admin
 if (!isset($_SESSION["role"]) || $_SESSION["role"] != "monitoring_admin") {
-    header("Location: login.php");
+    echo "Access Denied!";
     exit();
 }
 
-$conn = new mysqli("localhost", "root", "", "air_quality_db");
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $sensor_name = $_POST["sensor_name"];
-    $location = $_POST["location"];
-    $status = $_POST["status"];
-
-    $query = "INSERT INTO sensors (sensor_name, location, status) VALUES (?, ?, ?)";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("sss", $sensor_name, $location, $status);
-    $stmt->execute();
-}
-
-$sensors = $conn->query("SELECT * FROM sensors");
+// Fetch sensors
+$query = "SELECT * FROM sensors";
+$result = $conn->query($query);
 ?>
 
 <!DOCTYPE html>
@@ -30,37 +22,36 @@ $sensors = $conn->query("SELECT * FROM sensors");
 </head>
 <body>
 
-<h2>Manage Sensors</h2>
+<h2>Sensor Management</h2>
+<a href="dashboard.php">Back to Dashboard</a> | 
+<a href="add_sensor.php">Add New Sensor</a>
 
-<form method="POST">
-    <input type="text" name="sensor_name" placeholder="Sensor Name" required>
-    <input type="text" name="location" placeholder="Location" required>
-    <select name="status">
-        <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
-    </select>
-    <button type="submit">Add Sensor</button>
-</form>
-
-<h3>Existing Sensors</h3>
 <table border="1">
     <tr>
         <th>ID</th>
-        <th>Sensor Name</th>
         <th>Location</th>
-        <th>Status</th>
+        <th>Latitude</th>
+        <th>Longitude</th>
+        <th>AQI Value</th>
+        <th>Category</th>
+        <th>Actions</th>
     </tr>
-    <?php while ($row = $sensors->fetch_assoc()): ?>
-    <tr>
-        <td><?= $row["id"] ?></td>
-        <td><?= $row["sensor_name"] ?></td>
-        <td><?= $row["location"] ?></td>
-        <td><?= $row["status"] ?></td>
-    </tr>
-    <?php endwhile; ?>
-</table>
 
-<a href="dashboard.php">Back to Dashboard</a>
+    <?php while ($row = $result->fetch_assoc()) { ?>
+    <tr>
+        <td><?php echo $row["id"]; ?></td>
+        <td><?php echo $row["location"]; ?></td>
+        <td><?php echo $row["latitude"]; ?></td>
+        <td><?php echo $row["longitude"]; ?></td>
+        <td><?php echo $row["aqi_value"]; ?></td>
+        <td><?php echo $row["category"]; ?></td>
+        <td>
+            <a href="edit_sensor.php?id=<?php echo $row["id"]; ?>">Edit</a> |
+            <a href="delete_sensor.php?id=<?php echo $row["id"]; ?>" onclick="return confirm('Are you sure?');">Delete</a>
+        </td>
+    </tr>
+    <?php } ?>
+</table>
 
 </body>
 </html>
